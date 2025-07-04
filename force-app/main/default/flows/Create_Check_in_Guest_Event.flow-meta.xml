@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <assignments>
+        <description>Sets the EventSummary variable to a string made of reservation details from the previous query.</description>
+        <name>Event_Summary</name>
+        <label>Event Summary</label>
+        <locationX>176</locationX>
+        <locationY>458</locationY>
+        <assignmentItems>
+            <assignToReference>EventSummary</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>Check-in date of {!Reservation_1.Check_in_Date_c__c}, check-out date of {!Reservation_1.Check_out_Date_c__c}, for room type {!Reservation_1.Room_Type_c__c}</stringValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Check_in_Event</targetReference>
+        </connector>
+    </assignments>
+    <description>This flow creates a Guest Event record to capture when a contact completes check-in for a reservation.</description>
+    <environments>Default</environments>
+    <interviewLabel>Create Check-in Guest Event {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Create Check-in Guest Event</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <description>Creates a Guest Event record tied to the incoming ContactRecordID variable, and populated by the outgoing EventSummary variable.</description>
+        <name>Check_in_Event</name>
+        <label>Check-in Event</label>
+        <locationX>176</locationX>
+        <locationY>566</locationY>
+        <inputAssignments>
+            <field>Activity_Type__c</field>
+            <value>
+                <stringValue>Guest Check-in</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Contact__c</field>
+            <value>
+                <elementReference>ContactRecordID</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Details__c</field>
+            <value>
+                <elementReference>EventSummary</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Guest_Event__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordLookups>
+        <description>Finds record matching Contact_Id from previous query, sorted by date to return only most recent reservation.</description>
+        <name>Reservation_1</name>
+        <label>Reservation 1</label>
+        <locationX>176</locationX>
+        <locationY>350</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Event_Summary</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Contact_ID_c__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Unified_Link_2.SourceRecordId__c</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>ExternalReservation__dlm</object>
+        <sortField>Check_in_Date_c__c</sortField>
+        <sortOrder>Desc</sortOrder>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <description>Finds record matching Salesforce ID so we know corresponding UnifiedRecordId.</description>
+        <name>Unified_Link_1</name>
+        <label>Unified Link 1</label>
+        <locationX>176</locationX>
+        <locationY>134</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Unified_Link_2</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>SourceRecordId__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>ContactRecordID</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>UnifiedLinkssotIndividualCcid__dlm</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <description>Finds record matching UnifiedRecordId from previous query, filtered by External as the source object.</description>
+        <name>Unified_Link_2</name>
+        <label>Unified Link 2</label>
+        <locationX>176</locationX>
+        <locationY>242</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Reservation_1</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>UnifiedRecordId__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Unified_Link_1.UnifiedRecordId__c</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>ssot__DataSourceObjectId__c</field>
+            <operator>StartsWith</operator>
+            <value>
+                <stringValue>External</stringValue>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>UnifiedLinkssotIndividualCcid__dlm</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Unified_Link_1</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <description>Populate this input variable with a Contact recordId.</description>
+        <name>ContactRecordID</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <description>This describes details of the most recent reservation record, such as check-in date, check-out date, and room type.</description>
+        <name>EventSummary</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+</Flow>
